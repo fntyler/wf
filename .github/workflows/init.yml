@@ -1,0 +1,18 @@
+name: init
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+# TODO: see https://bitwarden.atlassian.net/l/cp/SLtTZJ90 for configuration tips
+jobs:
+  general:
+    name: General
+    runs-on: ubuntu-24.04
+
+    steps:
+      name: Run
+      run: |
+        echo ${{ github.sha }}
+
