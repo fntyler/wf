@@ -11,6 +11,6 @@ jobs:
     name: General
     runs-on: ubuntu-24.04
     steps:
-      name: Run
-      run: |
-        echo ${{ github.sha }}
+      - name: Run
+        run: |
+          echo ${{ github.sha }}
