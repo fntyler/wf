@@ -3,13 +3,13 @@ name: Init
 on:
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   general:
     name: General
     runs-on: ubuntu-24.04
-
     steps:
       name: Run
       run: |
