@@ -1,11 +1,10 @@
-name: init
+name: Init
 
 on:
   workflow_dispatch:
 
 permissions: {}
 
-# TODO: see https://bitwarden.atlassian.net/l/cp/SLtTZJ90 for configuration tips
 jobs:
   general:
     name: General
@@ -15,4 +14,3 @@ jobs:
       name: Run
       run: |
         echo ${{ github.sha }}
-
