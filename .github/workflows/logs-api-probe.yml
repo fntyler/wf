@@ -1,0 +1,61 @@
+name: Logs API probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      lines_per_step:
+        description: Marker lines emitted per step, one per second
+        default: "60"
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  emit:
+    name: Emit ordered markers
+    runs-on: ubuntu-24.04
+    env:
+      LINES: ${{ inputs.lines_per_step }}
+    steps:
+      - name: Resolve own job id from inside the job
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          echo "PROBE_RUNNER_NAME=${RUNNER_NAME}"
+          echo "PROBE_RUN_ID=${GITHUB_RUN_ID} PROBE_ATTEMPT=${GITHUB_RUN_ATTEMPT} PROBE_JOB_KEY=${GITHUB_JOB}"
+          url="/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}/jobs"
+          if gh api "$url" > jobs.json 2> api-err.txt; then
+            jq -r '.jobs[] | "PROBE_JOBROW id=\(.id) name=\(.name) runner=\(.runner_name // "null") status=\(.status)"' jobs.json
+            id=$(jq -r --arg r "$RUNNER_NAME" '.jobs[] | select(.runner_name==$r) | .id' jobs.json | head -1)
+            echo "PROBE_RESOLVED_JOB_ID=${id:-NONE}"
+          else
+            echo "PROBE_RESOLVED_JOB_ID=LOOKUP_FAILED"
+            cat api-err.txt
+          fi
+
+      - name: Emit markers step A
+        run: |
+          for i in $(seq 1 "$LINES"); do
+            printf 'MARK A %03d %s\n' "$i" "$(date -u +%s.%3N)"
+            sleep 1
+          done
+
+      - name: Emit markers step B
+        run: |
+          for i in $(seq 1 "$LINES"); do
+            printf 'MARK B %03d %s\n' "$i" "$(date -u +%s.%3N)"
+            sleep 1
+          done
+
+      - name: Emit markers step C
+        run: |
+          for i in $(seq 1 "$LINES"); do
+            printf 'MARK C %03d %s\n' "$i" "$(date -u +%s.%3N)"
+            sleep 1
+          done
+
+      - name: Emit terminal marker
+        run: echo "MARK END 000 $(date -u +%s.%3N)"
