@@ -1,0 +1,72 @@
+name: Placeholder Shim
+
+# An inert workflow with no side effects. It exists to give an API client
+# something to poll: it holds a non-terminal status for a configurable
+# duration so the queued -> in_progress -> completed transition can be
+# observed, and it finishes with whichever conclusion it is told to.
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: Seconds to stay in progress
+        type: string
+        default: "60"
+      conclusion:
+        description: Conclusion to finish with
+        type: choice
+        default: success
+        options:
+          - success
+          - failure
+      actor:
+        description: Who triggered the run
+        type: string
+      source:
+        description: What triggered the run
+        type: string
+      ref_name:
+        description: Branch or tag name
+        type: string
+      git_ref:
+        description: Fully qualified git ref
+        type: string
+
+permissions: {}
+
+jobs:
+  shim:
+    name: Shim
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # Inputs reach the shell through the environment, never through
+      # ${{ }} interpolation into the script body.
+      - name: Echo the dispatch metadata
+        env:
+          ACTOR: ${{ inputs.actor }}
+          SOURCE: ${{ inputs.source }}
+          REF_NAME: ${{ inputs.ref_name }}
+          GIT_REF: ${{ inputs.git_ref }}
+        run: |
+          echo "actor=$ACTOR"
+          echo "source=$SOURCE"
+          echo "ref_name=$REF_NAME"
+          echo "git_ref=$GIT_REF"
+
+      - name: Stay in progress
+        env:
+          DURATION: ${{ inputs.duration }}
+        run: |
+          case "$DURATION" in
+            ''|*[!0-9]*) echo "duration must be a positive integer"; exit 1 ;;
+          esac
+          echo "Sleeping for ${DURATION}s"
+          sleep "$DURATION"
+
+      - name: Set the conclusion
+        env:
+          CONCLUSION: ${{ inputs.conclusion }}
+        run: |
+          echo "Finishing with: $CONCLUSION"
+          [ "$CONCLUSION" = "success" ]
